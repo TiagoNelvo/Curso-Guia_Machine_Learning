@@ -105,5 +105,123 @@ base_dados_final
 
 from spacy.training import Example
 
+modelo = spacy.blank('pt')
+textcat = modelo.add_pipe("textcat")
+textcat.add_label("ALEGRIA")
+textcat.add_label("MEDO")
+historico = []
 
+modelo.begin_training()
+for epoca in range(1000):
+    random.shuffle(base_dados_final)
+    losses = {}
+    for batch in spacy.util.minibatch(base_dados_final, 30):
+        textos = [modelo(texto) for texto, entities in batch]
+        annotations = [{'cats': entities} for texto, entities in batch]
+        examples = [Example.from_dict(doc, annotation) for doc, annotation in zip(
+                textos, annotations
+            )]
+        modelo.update(examples, losses=losses)
+    if epoca % 100 == 0:
+        print(losses)
+        historico.append(losses)
+        
+historico_loss = []
+for i in historico:
+    historico_loss.append(i.get('textcat')) 
+    
+historico_loss = np.array(historico_loss)
+historico_loss
 
+import matplotlib.pyplot as plt
+plt.plot(historico_loss)
+plt.title('Progressão do erro')
+plt.xlabel('Épocas')
+plt.ylabel('Erro') 
+
+modelo.to_disk("modelo")
+
+# Etapa 6: Testes com uma frase
+
+modelo_carregado = spacy.load("modelo")
+modelo_carregado
+
+texto_positivo = 'eu adoro cor dos seus olhos'
+        
+texto_positivo = preprocessamento(texto_positivo)
+texto_positivo
+
+previsao = modelo_carregado(texto_positivo)
+previsao
+
+previsão.cats
+
+texto_negativo = 'estou com medo dele'
+previsao = modelo_carregado(preprocessamento(texto_negativo))
+previsao.cats
+
+# Etapa 7: Avaliação do modelo
+
+# Avaliação na base de treinamento
+
+previsoes = []
+for texto in base_dados['texto']:
+    #print(texto)
+    previsao = modelo_carregado(texto)
+    previsoes.append(previsao.cats)
+
+previsoes
+
+previsoes_final = []
+for previsao in previsoes:
+    if previsao['ALEGRIA'] > previsao['MEDO']:
+        previsoes_final.append('alegria')
+    else:
+        previsoes_final.append('medo')
+
+previsoes_final = np.array(previsoes_final)
+
+previsoes_final
+
+respostas_reais = base_dados['emocao'].values
+respostas_reais
+
+from sklearn.metrics import confusion_matrix, accuracy_score
+accuracy_score(respostas_reais, previsoes_final)
+
+cm = confusion_matrix(respostas_reais, previsoes_final)
+cm
+
+# Avaliação na base de teste
+
+base_dados_teste = pd.read_csv('/content/base_teste.txt', encoding = 'utf-8')
+
+base_dados_teste.head()
+
+base_dados_teste['texto'] = base_dados_teste['texto'].apply(preprocessamento)
+
+base_dados_teste.head()
+
+previsoes = []
+for texto in base_dados_teste['texto']:
+    #print(texto)
+    previsao = modelo_carregado(texto)
+    previsoes.append(previsao.cats)
+    
+previsoes_final = []
+for previsao in previsoes:
+    if previsao['ALEGRIA'] > previsao['MEDO']:
+        previsoes_final.append('alegria')
+    else:
+        previsoes_final.append('medo')
+
+previsoes_final = np.array(previsoes_final)
+    
+respostas_reais = base_dados_teste['emocao'].values
+    
+accuracy_score(respostas_reais, previsoes_final)
+
+cm = confusion_matrix(respostas_reais, previsoes_final)
+cm
+        
+    
