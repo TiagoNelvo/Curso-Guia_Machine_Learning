@@ -51,7 +51,7 @@ def preprocessamento(texto):
     lista = [palavra for palavra in lista if palavra not in stop_words and palavra not in pontuacoes]
     lista = ' '.join([str(elemento) for elemento in lista if not elemento.isdigit()])
 
-  return lista
+    return lista
 
 teste = preprocessamento('Estou aPrendendo 1 10 23 processamento de linguagem natural, Curso em Curitiba')
 teste
@@ -223,5 +223,3 @@ accuracy_score(respostas_reais, previsoes_final)
 
 cm = confusion_matrix(respostas_reais, previsoes_final)
 cm
-        
-    
